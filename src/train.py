@@ -61,6 +61,10 @@ def main():
     ap.add_argument("--hidden", type=int, default=256)
     ap.add_argument("--blocks", type=int, default=4)
     ap.add_argument("--comp", type=int, default=8)
+    ap.add_argument("--dropout", type=float, default=0.0)
+    ap.add_argument("--wd", type=float, default=1e-5)
+    ap.add_argument("--diag-cov", action="store_true",
+                    help="use only the 6 diagonal Cholesky terms of covariance")
     args = ap.parse_args()
 
     log = setup_log(f"train_seed{args.seed}")
@@ -71,6 +75,9 @@ def main():
     data = load_data(args.data)
     xtr, ytr, _ = data["train"]
     xva, yva, _ = data["val"]
+    if args.diag_cov:
+        cols = list(range(11)) + [11 + k for k in (0, 2, 5, 9, 14, 20)]
+        xtr, xva = xtr[:, cols], xva[:, cols]
 
     # normalize features with train stats
     mu_x, sd_x = xtr.mean(0), xtr.std(0) + 1e-8
@@ -79,8 +86,10 @@ def main():
     log.info("train samples %d, val samples %d", len(Ytr), len(Yva))
 
     dev = "cpu"
-    model = MDN(Xtr.shape[1], args.hidden, args.blocks, args.comp).to(dev)
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-5)
+    model = MDN(Xtr.shape[1], args.hidden, args.blocks, args.comp,
+                args.dropout).to(dev)
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr,
+                            weight_decay=args.wd)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
 
     ck = CKPT / f"mdn_seed{args.seed}.pt"

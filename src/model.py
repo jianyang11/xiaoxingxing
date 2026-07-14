@@ -7,22 +7,24 @@ N_WINDOWS = 10
 
 
 class ResBlock(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, p_drop=0.0):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, dim), nn.SiLU(), nn.Linear(dim, dim))
+            nn.Linear(dim, dim), nn.SiLU(), nn.Dropout(p_drop),
+            nn.Linear(dim, dim))
 
     def forward(self, x):
         return F.silu(x + self.net(x))
 
 
 class MDN(nn.Module):
-    def __init__(self, in_dim, hidden=256, n_blocks=4, n_comp=8):
+    def __init__(self, in_dim, hidden=256, n_blocks=4, n_comp=8, p_drop=0.0):
         super().__init__()
         self.n_comp = n_comp
         self.win_emb = nn.Embedding(N_WINDOWS, 16)
         self.inp = nn.Linear(in_dim + 16, hidden)
-        self.blocks = nn.Sequential(*[ResBlock(hidden) for _ in range(n_blocks)])
+        self.blocks = nn.Sequential(
+            *[ResBlock(hidden, p_drop) for _ in range(n_blocks)])
         self.head = nn.Linear(hidden, 3 * n_comp)
 
     def forward(self, x, w):
@@ -30,7 +32,7 @@ class MDN(nn.Module):
         h = self.blocks(F.silu(self.inp(h)))
         out = self.head(h)
         logit_pi, mu, log_sig = out.chunk(3, dim=-1)
-        log_sig = log_sig.clamp(-5.0, 1.5)
+        log_sig = log_sig.clamp(-3.0, 1.5)
         return logit_pi, mu, log_sig
 
     def nll(self, x, w, y):

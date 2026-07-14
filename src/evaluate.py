@@ -34,19 +34,22 @@ plt.rcParams.update({"figure.dpi": 130, "font.size": 11,
 
 
 def load_ensemble(seeds):
-    models, mu_x, sd_x = [], None, None
+    models, mu_x, sd_x, cols = [], None, None, None
     for s in seeds:
         f = CKPT / f"mdn_seed{s}_best.pt"
         if not f.exists():
             continue
         st = torch.load(f, map_location="cpu")
         a = st["args"]
-        m = MDN(32, a["hidden"], a["blocks"], a["comp"])
+        mu_x, sd_x = st["mu_x"], st["sd_x"]
+        if a.get("diag_cov"):
+            cols = list(range(11)) + [11 + k for k in (0, 2, 5, 9, 14, 20)]
+        m = MDN(len(mu_x), a["hidden"], a["blocks"], a["comp"],
+                a.get("dropout", 0.0))
         m.load_state_dict(st["model"])
         m.eval()
         models.append(m)
-        mu_x, sd_x = st["mu_x"], st["sd_x"]
-    return models, mu_x, sd_x
+    return models, mu_x, sd_x, cols
 
 
 def ens_cdf(models, x, w, grid):
@@ -68,8 +71,10 @@ def ens_nll(models, x, w, y):
 def main():
     d = np.load(ROOT / "data" / "dataset.npz", allow_pickle=True)
     X, Y, SPK = d["test_x"], d["test_y"], d["test_spk"]
-    models, mu_x, sd_x = load_ensemble(range(5))
+    models, mu_x, sd_x, cols = load_ensemble(range(5))
     print(f"{len(models)} ensemble members, {len(X)} test asteroids")
+    if cols is not None:
+        X = X[:, cols]
     Xn = torch.tensor((X - mu_x) / sd_x, dtype=torch.float32)
 
     grid = torch.linspace(-7.0, 1.0, 801)
