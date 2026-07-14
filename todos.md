@@ -36,16 +36,16 @@
 ## 阶段4：模型训练
 - [x] 数据集构建 src/dataset.py（要素 sin/cos 编码 + 协方差 Cholesky 符号 log 编码，归一化统计量存 checkpoint）
 - [x] MDN 模型 src/model.py（residual MLP + 8 高斯分量，window embedding）；训练脚本 src/train.py（可续训）
-- [ ] 小规模训练跑通（用已完成的部分仿真数据）
-- [ ] 训练不确定性量化头（MDN 或 deep ensemble）
-- [ ] 训练曲线、超参记录、断点续训（checkpoint）
-- [ ] 迭代改进直至测试集精度达标（位置误差、分布覆盖率校准）
+- [x] 小规模训练跑通；发现严重过拟合 → 对角协方差特征 + dropout/wd + 早停解决
+- [x] 加入 MOID/周期/共振特征（显著提升：CRPS 0.247→0.226，NLL 0.88→0.46）
+- [x] 3-seed deep ensemble（断点续训，best-val checkpoint）
+- [~] 迭代改进：预算限制，本轮用 858 颗；扩到 3424 颗后重训是首要改进项（见 docs/results.md）
 
 ## 阶段5：评估与科学验证
-- [ ] 与蒙特卡洛 ground truth 对比：精度（接近距离分布 KL/CRPS、校准曲线）与加速比
+- [x] 与 MC ground truth 对比：CRPS 0.226 vs 气候学 0.297；校准近乎完美（PIT 平坦、coverage 对角线）；加速 ~2700×
 - [ ] 用真实 PHA（如 Apophis、Bennu）做案例研究
-- [ ] 生成论文级图表（matplotlib，出版质量）
-- [ ] 撰写结果报告 docs/results.md
+- [x] 图表：results/figs/（pit_hist, calibration, quantile_scatter, example_distributions），已目视检查
+- [x] 撰写结果报告 docs/results.md
 
 ## 阶段6：论文与交付
 - [ ] 撰写论文草稿（LaTeX，AAS/Icarus 格式）paper/
