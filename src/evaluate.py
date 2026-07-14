@@ -39,11 +39,12 @@ def load_ensemble(seeds):
         f = CKPT / f"mdn_seed{s}_best.pt"
         if not f.exists():
             continue
-        st = torch.load(f, map_location="cpu")
+        st = torch.load(f, map_location="cpu", weights_only=False)
         a = st["args"]
         mu_x, sd_x = st["mu_x"], st["sd_x"]
         if a.get("diag_cov"):
-            cols = list(range(11)) + [11 + k for k in (0, 2, 5, 9, 14, 20)]
+            n_el = len(mu_x) - 6
+            cols = list(range(n_el)) + [n_el + k for k in (0, 2, 5, 9, 14, 20)]
         m = MDN(len(mu_x), a["hidden"], a["blocks"], a["comp"],
                 a.get("dropout", 0.0))
         m.load_state_dict(st["model"])
@@ -88,7 +89,7 @@ def main():
         F = ens_cdf(models, Xn, wt, grid)               # (n_ast, G)
         for i in range(n_ast):
             y = Y[i, :, w]
-            y = y[~np.isnan(y)]
+            y = y[np.isfinite(y)]
             if len(y) == 0:
                 continue
             # empirical CDF on grid
@@ -96,12 +97,15 @@ def main():
             Fp = F[i].numpy()
             crps_all.append(np.sum((Fp - Fe) ** 2) * dg)
             w1_all.append(np.sum(np.abs(Fp - Fe)) * dg)
-            nll_all.append(float(ens_nll(models, Xn[i:i+1].repeat(len(y), 1),
-                                         wt[:1].repeat(len(y)),
-                                         torch.tensor(y, dtype=torch.float32)
-                                         ).mean()))
-            pit_all.append(np.interp(y, grid.numpy(), Fp))
-            q_pred.append(np.interp([0.05, 0.5, 0.95], Fp, grid.numpy()))
+            with torch.no_grad():
+                nll_i = ens_nll(models, Xn[i:i+1].repeat(len(y), 1),
+                                wt[:1].repeat(len(y)),
+                                torch.tensor(y, dtype=torch.float32))
+            nll_all.append(float(nll_i.clamp(max=20.0).mean()))
+            Fm = np.maximum.accumulate(Fp)
+            Fm = Fm + np.linspace(0, 1e-9, len(Fm))
+            pit_all.append(np.interp(y, grid.numpy(), Fm))
+            q_pred.append(np.interp([0.05, 0.5, 0.95], Fm, grid.numpy()))
             q_true.append(np.quantile(y, [0.05, 0.5, 0.95]))
 
     crps = float(np.mean(crps_all))

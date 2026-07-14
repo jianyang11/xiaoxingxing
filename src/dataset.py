@@ -13,6 +13,7 @@ Target per (asteroid, window): the set of clone log10(dmin) values.
 The MDN is trained on individual clone samples: (x, window) -> log10 dmin.
 """
 import numpy as np
+import pandas as pd
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,8 +22,14 @@ SIMDIR = ROOT / "data" / "sim"
 N_WINDOWS = 10
 EPS = 1e-12
 
+_tg = pd.read_csv(ROOT / "data" / "raw" / "targets.csv",
+                  usecols=["spkid", "moid", "per_y"])
+MOID = dict(zip(_tg.spkid.astype(str), _tg.moid))
+PER = dict(zip(_tg.spkid.astype(str), _tg.per_y))
+
 
 def features_from_npz(d):
+    spkid = str(d["spkid"])
     e, q, tp, node, peri, inc = d["mean"]
     epoch = float(d["epoch_jd"])
     a = q / (1.0 - e)
@@ -33,7 +40,12 @@ def features_from_npz(d):
             np.sin(ang[0]), np.cos(ang[0]),
             np.sin(ang[1]), np.cos(ang[1]),
             np.sin(ang[2]), np.cos(ang[2]),
-            np.sin(phase), np.cos(phase)]
+            np.sin(phase), np.cos(phase),
+            np.log10(max(MOID[spkid], 1e-6)),   # Earth MOID: hard lower bound
+            np.log10(PER[spkid]),
+            # near-resonance proxy: distance of P/P_E to nearest small rational
+            min(abs(PER[spkid] - r) for r in
+                (0.5, 2/3, 0.75, 1.0, 1.25, 4/3, 1.5, 2.0, 2.5, 3.0))]
     C = np.array(d["cov"], dtype=float)
     # scale rows/cols to natural units: tp in days ~ ok; angles deg ~ ok
     w, V = np.linalg.eigh(C)

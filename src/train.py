@@ -76,7 +76,8 @@ def main():
     xtr, ytr, _ = data["train"]
     xva, yva, _ = data["val"]
     if args.diag_cov:
-        cols = list(range(11)) + [11 + k for k in (0, 2, 5, 9, 14, 20)]
+        n_el = xtr.shape[1] - 21
+        cols = list(range(n_el)) + [n_el + k for k in (0, 2, 5, 9, 14, 20)]
         xtr, xva = xtr[:, cols], xva[:, cols]
 
     # normalize features with train stats

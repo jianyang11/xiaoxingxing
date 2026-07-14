@@ -1,0 +1,13 @@
+{
+  "n_test_asteroids": 92,
+  "n_ensemble": 3,
+  "CRPS": 0.24748014029198562,
+  "NLL": 0.8784673299050748,
+  "W1": 0.4850519991598679,
+  "CRPS_climatology": 0.2972228382068948,
+  "W1_climatology": 0.5659816804712854,
+  "q50_rmse": NaN,
+  "t_nn_per_asteroid_s": 0.01417817499326623,
+  "t_mc_per_asteroid_s": 85.0,
+  "speedup": 5995.129841490166
+}
