@@ -1,0 +1,74 @@
+\documentclass[twocolumn]{aastex631}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\begin{document}
+
+\title{Learning the Orbital-Uncertainty Propagation Operator: A Neural
+Surrogate for Monte-Carlo Impact Monitoring of Near-Earth Asteroids}
+
+\author{...}
+\affiliation{...}
+
+\begin{abstract}
+Impact monitoring of near-Earth asteroids (NEAs) relies on propagating the
+orbit-determination uncertainty into the future, traditionally by integrating
+thousands of virtual asteroids (clones) sampled from the orbital covariance
+with high-fidelity $N$-body dynamics (e.g.\ JPL Sentry). We present a neural
+surrogate that learns this uncertainty-propagation operator directly: given the
+cometary orbital elements and the $6\times6$ covariance matrix of an NEA, a
+mixture-density network (MDN) deep ensemble predicts the full probability
+distribution of the minimum Earth-approach distance in ten consecutive
+decadal windows spanning 100~yr. Ground truth is generated with REBOUND
+(IAS15) including all eight planets, the Moon, and general-relativistic
+corrections, validated against JPL Horizons ephemerides. Trained on
+$\sim$2{,}000 real NEAs from the JPL Small-Body Database with MOID
+$<0.05$~au, the surrogate reproduces the Monte-Carlo close-approach
+distributions with well-calibrated uncertainties (CRPS, PIT, and coverage
+diagnostics) at a $\sim$$10^{4-5}\times$ speed-up over direct $N$-body clone
+propagation, enabling population-scale risk triage for surveys such as
+Rubin/LSST, which are expected to discover $\sim$$10^5$ new NEAs.
+\end{abstract}
+
+\keywords{Near-Earth objects --- Asteroids --- Impact monitoring --- Neural networks}
+
+\section{Introduction}
+% - Impact monitoring problem; Sentry / Sentry-II; clone MC cost
+% - Deep learning in SSD: Hefele et al. 2020 (A&A 634, A45) binary classifier;
+%   gap: no work learns the full uncertainty-propagation operator with UQ
+% - LSST discovery rates motivate fast triage
+TODO
+
+\section{Data and Ground-Truth Generation}
+\subsection{Target selection}
+% SBDB query: 42,204 NEOs; condition code <= 3, data arc >= 365 d -> 10,907;
+% Earth MOID < 0.05 au -> 3,424 targets with full 6x6 cometary covariance
+TODO
+
+\subsection{$N$-body Monte-Carlo propagation}
+% REBOUND IAS15, Sun + 8 planets + Moon (Horizons initial conditions,
+% epoch JD 2461000.5), REBOUNDx full GR (c in code units).
+% Validation vs Horizons: Apophis 10-yr error 2.57e6 km (no GR) -> 4.7e4 km (GR);
+% residual attributable to asteroid perturbers + Yarkovsky in JPL dynamics.
+% Clones: multivariate normal in (e, q, tp, Omega, omega, i) at covariance epoch;
+% train/val 96 clones, test 256 clones; sampling cadence 2.4/1.8 d with
+% quadratic refinement of encounter minima; 100-yr horizon, 10 decadal windows.
+TODO
+
+\section{Neural Surrogate}
+% Features: elements (angles as sin/cos, orbital phase) + signed-log Cholesky
+% of covariance (32-dim); window embedding; residual MLP; 8-component MDN;
+% deep ensemble over 5 seeds; NLL training.
+TODO
+
+\section{Results}
+% CRPS / NLL / W1 vs climatology baseline; calibration (PIT, coverage);
+% quantile agreement; example distributions; speed-up benchmark;
+% case studies (Apophis, Bennu).
+TODO
+
+\section{Discussion and Conclusions}
+TODO
+
+\bibliography{refs}
+\end{document}
