@@ -29,7 +29,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("batch")
 
-N_CLONES = {"train": 128, "val": 128, "test": 256}
+N_CLONES = {"train": 96, "val": 96, "test": 256}
+SAMPLE_DAYS = {"train": 2.4, "val": 2.4, "test": 1.8}
 
 
 def split_of(spkid: str) -> str:
@@ -66,7 +67,8 @@ def run_job(args):
     t0 = time.time()
     try:
         tmp = out + ".tmp.npz"
-        ok = run_one(Path(cov_path), N_CLONES[sp], seed, Path(tmp))
+        ok = run_one(Path(cov_path), N_CLONES[sp], seed, Path(tmp),
+                     sample_days=SAMPLE_DAYS[sp])
         if ok:
             os.replace(tmp, out)
         return (spkid, ok, time.time() - t0, None)
