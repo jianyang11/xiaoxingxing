@@ -15,6 +15,7 @@ quadratic interpolation around sampled minima.
 import json
 import numpy as np
 import rebound
+import reboundx
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,7 +35,7 @@ def jd_to_t(jd: float) -> float:
 def load_cov(path: Path):
     d = json.loads(Path(path).read_text())
     c = d["covariance"]
-    if c is None:
+    if c is None or "elements" not in c:
         return None
     labels = c["labels"]
     idx = [labels.index(l) for l in COV_LABELS]
@@ -57,10 +58,17 @@ def sample_clones(mean, cov, n, rng):
     return samples
 
 
+C_AU_YR2PI = 10065.32  # speed of light in au/(yr/2pi)
+
+
 def build_sim(epoch_jd: float) -> rebound.Simulation:
     sim = rebound.Simulation(str(PLANETS_BIN))
     sim.integrator = "ias15"
-    sim.move_to_com()
+    rx = reboundx.Extras(sim)
+    f = rx.load_force("gr")
+    f.params["c"] = C_AU_YR2PI
+    rx.add_force(f)
+    sim._rx = rx  # keep reference alive
     sim.integrate(jd_to_t(epoch_jd))
     return sim
 
