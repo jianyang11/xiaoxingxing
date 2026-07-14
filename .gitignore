@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+data/raw/*.json
+data/sim/
+*.npz
+*.parquet
+checkpoints/*.pt
+logs/
+.ipynb_checkpoints/
