@@ -22,6 +22,10 @@ SIMDIR = ROOT / "data" / "sim"
 N_WINDOWS = 10
 EPS = 1e-12
 
+# case-study PHAs (Apophis, Bennu) held out of train/val for out-of-sample
+# comparison in src/case_studies.py
+CASE_STUDY_EXCLUDE = {"20099942", "20101955"}
+
 _tg = pd.read_csv(ROOT / "data" / "raw" / "targets.csv",
                   usecols=["spkid", "moid", "per_y"])
 MOID = dict(zip(_tg.spkid.astype(str), _tg.moid))
@@ -59,6 +63,8 @@ def features_from_npz(d):
 def load_split(split):
     xs, ys, spk = [], [], []
     for f in sorted((SIMDIR / split).glob("*.npz")):
+        if f.stem in CASE_STUDY_EXCLUDE:
+            continue
         d = np.load(f)
         x = features_from_npz(d)
         dmin = np.asarray(d["dmin"])           # (n_clones, 10)
